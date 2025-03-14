@@ -7,19 +7,37 @@ from .models import Product,Collection
 from .serializers import ProductSerializer
 
 
-@api_view()
+@api_view(['GET','POST'])
 def product_list(request): # this is a view function
-    queryset =Product.objects.select_related('collection').all() #bring all the products from the database
-    serializer = ProductSerializer(
+    if request.method=='GET':
+        queryset =Product.objects.select_related('collection').all() #bring all the products from the database
+        serializer = ProductSerializer(
         queryset, many=True, context={"request": request}) #serialize the queryset,  we use many=True when  serializing multiple objects
-    return Response(serializer.data) #return the serialized data
+        return Response(serializer.data) #return the serialized data
+    elif request.method=='POST':
+        #here happens the deserialization:
+        serializer=ProductSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@api_view()
-def product_detail(request,id):
+@api_view(['GET','PUT'])
+def product_detail(request,id): #this function requires to pass the id of the product
+    
     product = get_object_or_404(Product, id=id)
-    serializer = ProductSerializer(product)
-    return Response(serializer.data)
+    
+    if request.method=='GET': #serialize the product
+        serializer = ProductSerializer(product)
+        return Response(serializer.data)
+    elif request.method=='PUT':#deserialize the data
+        serializer = ProductSerializer(product, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+
 @api_view()
 def collection_detail(request,pk):
     #collection=get_object_or_404(Collection,id=id)
