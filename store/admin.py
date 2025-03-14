@@ -98,6 +98,7 @@ class CollectionAdmin(admin.ModelAdmin):
     list_per_page=10
     
     @admin.display(ordering='products_count') # the field used with the ordering method should be existed in the model(wether originally or by overriding the get_queryset method)
+    # this method is used to make a clickable link that redirects to the products list  of the collection
     def products_count (self,collection):
         url =(
             reverse('admin:store_product_changelist')# we want the url of the changelist of the products that exist in the store app
@@ -110,7 +111,7 @@ class CollectionAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
-            products_count=Count('product')
+            products_count=Count('products')
         )
 
 class OrderItemInline(admin.TabularInline):

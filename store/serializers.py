@@ -31,3 +31,14 @@ class ProductSerializer(serializers.ModelSerializer):
     #     if len(value)<10:
     #         return serializers.ValidationError('the title is too short')
     #     return value
+    
+    
+class CollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Collection
+        fields=['id','title','products_count'] #the fields that will appear in the response
+        
+    products_count=serializers.IntegerField()
+    
+    # def get_product_count(self,collection:Collection):
+    #     return collection.product_set.count()

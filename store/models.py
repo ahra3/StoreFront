@@ -27,7 +27,7 @@ class Product(models.Model):
         validators=[MinValueValidator(1)]
         )
     last_update=models.DateTimeField(auto_now=True)
-    collection=models.ForeignKey(Collection,on_delete=models.CASCADE)
+    collection=models.ForeignKey(Collection,on_delete=models.CASCADE,related_name='products')
     promotions=models.ManyToManyField(Promotion,blank=True)
     def __str__(self):
         return self.title
@@ -85,7 +85,7 @@ class OrderItem(models.Model):
     #now we know that each order has a lot of orderitems, now the list of order items
     #in the order model (which is set by default) called: orderitem_set 
     order=models.ForeignKey(Order,on_delete=models.PROTECT)
-    product=models.ForeignKey(Product,on_delete=models.PROTECT)
+    product=models.ForeignKey(Product,on_delete=models.PROTECT , related_name='orderitems')
     quantity=models.PositiveBigIntegerField()
     unit_price=models.DecimalField(max_digits=5,decimal_places=2)
     
