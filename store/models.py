@@ -97,5 +97,11 @@ class CartItem(models.Model):
     product=models.ForeignKey(Product,on_delete=models.CASCADE)
     quantity=models.PositiveBigIntegerField()
 
-
+class Review(models.Model):
+    product=models.ForeignKey(Product,on_delete=models.CASCADE,related_name='reviews')
+    name=models.CharField(max_length=255)
+    description=models.TextField(blank=True)
+    date=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering=['-date']
 
