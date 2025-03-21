@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from uuid import uuid4
 
 class Promotion (models.Model):
     description =models.TextField()
@@ -90,12 +91,17 @@ class OrderItem(models.Model):
     unit_price=models.DecimalField(max_digits=5,decimal_places=2)
     
 class Cart(models.Model):
+    id = models.UUIDField(default=uuid4, editable=False, unique=True, primary_key=True)
     created_at=models.DateTimeField(auto_now_add=True)
 
 class CartItem(models.Model):
-    cart=models.ForeignKey(Cart,on_delete=models.CASCADE)
+    cart=models.ForeignKey(Cart,on_delete=models.CASCADE, related_name='items')
     product=models.ForeignKey(Product,on_delete=models.CASCADE)
     quantity=models.PositiveBigIntegerField()
+    
+    class Meta:
+        # this means that the couple cart and product should be unique, no duplicates in the same product in the same cart
+        unique_together=['cart','product']
 
 class Review(models.Model):
     product=models.ForeignKey(Product,on_delete=models.CASCADE,related_name='reviews')
