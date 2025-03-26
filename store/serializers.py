@@ -66,7 +66,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     id=serializers.UUIDField(read_only=True)
-    items=CartItemSerializer(many=True)
+    items=CartItemSerializer(many=True, read_only=True)
     total_price=serializers.SerializerMethodField(method_name='get_total_price')
     
     class Meta:
@@ -74,3 +74,58 @@ class CartSerializer(serializers.ModelSerializer):
         fields=['id','items','total_price']
     def get_total_price(self,cart:Cart):
         return sum(item.quantity * item.product.unit_price for item in cart.items.all())
+
+
+class AddCartItemSerializer(serializers.ModelSerializer):
+    product_id=serializers.IntegerField()
+    
+    
+    
+    #validating a certain field before saving it:
+    def validate_product_id(self,value):
+        try:
+                Product.objects.get(pk=value)
+        except Product.DoesNotExist:
+                raise serializers.ValidationError('Product not found')
+        return value
+    
+    """
+    here we are overriding the save method
+    to set the logic to , each time the same product 
+    is added many times ,we won't create a seperated cartitem for it
+    but we will update its quantity
+    """
+    def save(self, **kwargs):
+        """
+        these three parameters are gonna tell us wether this cart-item already exists or not:
+        if a cart item with an existed product_id and cart_id is found ,it will be updated
+        otherwise a new cart item will be created
+        """
+        
+        cart_id=self.context['cart_id']
+        product_id=self.validated_data['product_id']
+        quantity=self.validated_data['quantity']
+        
+        
+        
+        try:
+            cart_item=CartItem.objects.get(product_id=product_id,cart_id=cart_id)
+            # update an existing cart item:
+            cart_item.quantity+=quantity
+            cart_item.save()
+            self.instance=cart_item
+        except CartItem.DoesNotExist:
+            #create a new cart item:
+            self.instance=CartItem.objects.create(product_id=product_id,cart_id=cart_id,quantity=quantity)
+            
+        return self.instance
+    class Meta:
+        model=CartItem
+        fields=['id','product_id','quantity']
+
+
+class UpdateCartItemSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model=CartItem
+        fields=['quantity']
