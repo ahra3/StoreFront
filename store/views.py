@@ -3,12 +3,16 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter,OrderingFilter
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated,AllowAny,DjangoModelPermissions
+from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin,RetrieveModelMixin,DestroyModelMixin,ListModelMixin,UpdateModelMixin
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
-from .models import Product,Collection,Review,Cart,CartItem
+from rest_framework.permissions import IsAdminUser,IsAuthenticatedOrReadOnly
+from .models import Product,Collection,Review,Cart,CartItem,Customer
 from .fliters import ProductFilter
 from .pagination import DefaultPagination
-from .serializers import ProductSerializer, CollectionSerializer,ReviewSerializer,CartSerializer,CartItemSerializer,AddCartItemSerializer,UpdateCartItemSerializer
+from .serializers import ProductSerializer, CollectionSerializer,ReviewSerializer,CartSerializer,CartItemSerializer,AddCartItemSerializer,UpdateCartItemSerializer,CustomerSerializer
+from .permissions import IsAdminUserOrReadOnly,FullDjangoModelPermissions
 
 
 class ProductViewSet(ModelViewSet):
@@ -17,6 +21,7 @@ class ProductViewSet(ModelViewSet):
     filter_backends=[DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_class=ProductFilter
     pagination_class=DefaultPagination
+    permission_classes=[IsAdminUserOrReadOnly]
     search_fields=['title','description']
     ordering_fields=['unit_price','last_update']
 
@@ -36,6 +41,7 @@ class ProductViewSet(ModelViewSet):
 class CollectionViewSet(ModelViewSet):
     queryset=Collection.objects.annotate(products_count=Count('products')).all()
     serializer_class=CollectionSerializer
+    permission_classes=[IsAdminUserOrReadOnly]
     
     def destroy(self, request, *args, **kwargs):
         if Product.objects.filter(collection_id=kwargs['pk']).count()>0:
@@ -83,3 +89,29 @@ class CartItemViewSet(ModelViewSet):
         elif self.request.method=='PATCH':
             return UpdateCartItemSerializer
         return CartItemSerializer
+    
+    
+class CustomerViewSet(ModelViewSet):
+    queryset=Customer.objects.all()
+    serializer_class=CustomerSerializer
+    permission_classes=[FullDjangoModelPermissions]
+    
+    
+    # def get_permissions(self):
+    #     if self.request.method =='GET':
+    #         return [AllowAny()]
+    #     return [IsAuthenticated()]
+    
+    @action(detail=False,methods=['GET','PUT'],permission_classes=[IsAuthenticated])
+    def me(self,request,):
+        (customer,created)=Customer.objects.get_or_create(user_id=request.user.id)
+        if request.method=='GET':
+            
+            serializer=CustomerSerializer(customer)
+            return Response(serializer.data)
+        elif request.method=='PUT':
+            
+            serializer=CustomerSerializer(customer,data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
